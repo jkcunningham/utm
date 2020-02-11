@@ -75,7 +75,37 @@
                        :ellipsoid "GRS80"
                        :zone 52
                        :easting 675064.430d0
-                       :northing 6752564.671d0)))
+                       :northing 6752564.671d0)
+        ;; new tests (JKC)
+        (make-instance 'utm-test-case   ; just west of exception area
+                       :latitude  60.0d0
+                       :longitude 2.9d0
+                       :ellipsoid "WGS84"
+                       :zone 31
+                       :easting 494422.233d0
+                       :northing 6651415.406d0)
+        (make-instance 'utm-test-case   ; inside exception area
+                       :latitude  60.0d0
+                       :longitude 5.0d0
+                       :ellipsoid "WGS84"
+                       :zone 32
+                       :easting 276980.0d0
+                       :northing 6658157.0d0)
+        ;; (make-instance 'utm-test-case   ; inside exception area
+        ;;                :latitude  60.0d0
+        ;;                :longitude 6.1d0
+        ;;                :ellipsoid "WGS84"
+        ;;                :zone 32
+        ;;                :easting 338279.0d0
+        ;;                :northing 6654957.0d0)
+        (make-instance 'utm-test-case   ; east of exception area
+                       :latitude  60.0d0
+                       :longitude 12.1d0
+                       :ellipsoid "WGS84"
+                       :zone 33
+                       :easting 338279.227d0
+                       :northing 6654956.721d0)
+        ))
 
 (defun utm-near (a b)
   (< (abs (- a b)) *utm-tolerance*))
@@ -92,7 +122,8 @@
         (is-true (utm-near translated-northing northing)
                  "Could not convert ~a to UTM got northing ~a" coord translated-northing)
         (is-true (= zone translated-zone)
-                 "Could not convert ~a to UTM got zone ~a" coord translated-zone)))))
+                 "Could not convert ~a to UTM got zone ~a" coord translated-zone)
+        ))))
 
 
 (test utm-to-lat-lon
@@ -121,3 +152,34 @@
      (is-true (utm-near min 39.0d0))
      (is-true (utm-near sec 10.8d0)))
   )
+
+
+;; Boundary for Norways screwed up system
+;; 31V: lon: [0,3.0)    lat: [56.0,64.0)
+;; 32V: lon: [3.0,12.0) lat: [56.0,64.0)
+;;
+;; Also, in the region around Svalbard, the four grid zones 31X (9° of
+;; longitude in width), 33X (12° of longitude i;; n width), 35X (12°
+;; of longitude in width), and 37X (9° of longitude in width) are
+;; extended to cover what would otherwise have been covered by the
+;; seven grid zones 31X to 37X. The three grid zones 32X, 34X and 36X
+;; are not used.
+
+(with-open-file (fs "utm-z32-boundary.pts" :direction :output :if-exists :supersede)
+  (let (;;(fs *standard-output*)
+        ;(Rwest   3.00001d0)
+        (Rwest   6.00001d0)
+        ;(Rwest   9.00001d0)
+        (Rsouth 56.0d0)
+        (Reast  12.0d0)
+        (Rnorth 64.0d0)
+        (dinc    0.01d0)
+        (fmt "~&~14,4f ~14,4f ~4d~%"))
+    (loop for lon from Rwest upto Reast by dinc
+       do (apply #'format fs fmt (utm:lat-lon-to-utm Rsouth lon)))
+    (loop for lat from Rsouth upto Rnorth by dinc
+       do (apply #'format fs fmt (utm:lat-lon-to-utm lat Reast)))
+    (loop for lon from Reast downto Rwest by dinc
+       do (apply #'format fs fmt (utm:lat-lon-to-utm Rnorth lon)))
+    (loop for lat from Rnorth downto Rsouth by dinc
+       do (apply #'format fs fmt (utm:lat-lon-to-utm lat Rwest)))))

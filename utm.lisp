@@ -151,7 +151,7 @@
   "Convert degree, minute, second format to decimal.nn"
   (declare (optimize (speed 3))
            (type number degree minute second))
-  (+ degree (/ minute 60.0d0) (/ second (* 60.0d0 60.0d0))))
+  (+ degree (/ minute 60.0d0) (/ second 3600.0d0)))  ; eliminated unnecessary operation (JKC)
 
 (defun decimal-to-deg-min-sec (decimal)
   "Convert degree, minute, second format to decimal."
